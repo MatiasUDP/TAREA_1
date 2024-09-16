@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package dns;
+
+service DNSService {
+  // Método RPC que consulta la dirección IP de un dominio.
+  rpc Lookup (DNSRequest) returns (DNSResponse);
+}
+
+// Mensaje que contiene el dominio a buscar.
+message DNSRequest {
+  string domain = 1; // Nombre del dominio.
+}
+
+// Mensaje que contiene la respuesta con la dirección IP.
+message DNSResponse {
+  string ip_address = 1; // Dirección IP del dominio.
+}
+
