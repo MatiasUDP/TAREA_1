@@ -1,0 +1,62 @@
+Para ejecutar el codigo se deben seguir los siguientes pasos:
+requsito: tener instalado python con la libreria pandas y redis 
+
+
+1) Crear instancias de Redis  en Docker para cada particion con el siguiente comando (8)
+
+sudo docker run -d --name redis-6379 -p 6379:6379 redis
+
+sudo docker run -d --name redis-6380 -p 6380:6379 redis
+
+sudo docker run -d --name redis-6381 -p 6381:6379 redis
+
+sudo docker run -d --name redis-6382 -p 6382:6379 redis
+
+sudo docker run -d --name redis-6383 -p 6383:6379 redis
+
+sudo docker run -d --name redis-6384 -p 6384:6379 redis
+
+sudo docker run -d --name redis-6385 -p 6385:6379 redis
+
+sudo docker run -d --name redis-6386 -p 6386:6379 redis
+
+2) Acceder a cada instancia de Redis con el siguiente comando:
+
+sudo docker exec -it redis-6379 redis-cli (para interactuar con la instancia)
+
+3) Configurar la memoria maxima y la politica de remocion deseada:
+
+CONFIG SET maxmemory 2mb
+
+CONFIG SET maxmemory-policy allkeys-lru
+
+                  o 
+
+CONFIG SET maxmemory-policy allkeys-random
+                
+
+4) Instalar Grpc para python y protoc:
+
+pip install grpcio grpcio-tools
+
+apt-get install protobuf-compiler
+
+5) Generar codigo Grpc para python:
+
+python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. dns_service.proto
+
+6) Ejecutar el archivo "dns_server.py" 
+
+7) Ejecutar el archivo "dns_client.py"
+
+8) Ejecutar el archivo "TEST.py"
+
+9) Ejecutar el archivo "test_rango.py"
+
+10) Ejecutar el archivo "test-rango2.py"
+
+11) Ejecutar el archivo "test_rango3.py"
+
+
+
+
