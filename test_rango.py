@@ -1,6 +1,5 @@
 import pandas as pd
 import redis
-import hashlib
 import random
 import time
 import grpc
@@ -17,7 +16,7 @@ redis_instances = [
     redis.Redis(host='localhost', port=6383, db=0),
     redis.Redis(host='localhost', port=6384, db=0),
     redis.Redis(host='localhost', port=6385, db=0),
-    redis.Redis(host='localhost', port=6386, db=0)  # Opcional, si agregas otra instancia
+    redis.Redis(host='localhost', port=6386, db=0)  
 ]
 
 numero_particiones = 2
@@ -25,8 +24,8 @@ peticiones = [0] * 8
 contador_hit = 0
 contador_miss = 0
 response_times = []  # Lista para almacenar los tiempos de respuesta
-start_index = 0  # Índice inicial del rango
-end_index = 20000 # Índice final del rango (no inclusivo)
+start_index = 0  
+end_index = 20000 
 
 # Conectar al servidor gRPC
 def lookup_dns(domain):
@@ -36,63 +35,61 @@ def lookup_dns(domain):
         return response.ip_address
 
 
-# Función para obtener la partición correcta (instancia de Redis) basado en la clave
+# Función para obtener la partición
 def get_redis_instance(key):
-    first_char = key[0].lower()  # Obtener el primer carácter de la clave (minúscula)
+    first_char = key[0].lower()  
     
-    # Asignar claves a diferentes instancias según rangos de letras/números
-    if 'a' <= first_char <= 'm':  # Rango de 'a' a 'm'
+    
+    if 'a' <= first_char <= 'm':  
         peticiones[0]+= 1
-        return redis_instances[0]  # Instancia 1 (localhost:6379)
-    elif 'n' <= first_char <= 'z':  # Rango de 'n' a 'z'
+        return redis_instances[0]  
+    elif 'n' <= first_char <= 'z':  
         peticiones[1]+= 1
-        return redis_instances[1]  # Instancia 2 (localhost:6380)
+        return redis_instances[1]  
     else:
-        return redis_instances[0]
         peticiones[0]+= 1
+        return redis_instances[0]
 
-# Función para generar un valor dinámico para la clave
 def generate_value(key):
     return f"Valor generado para {key}"
 
-# Función para almacenar datos en la caché (con valores generados dinámicamente)
+# Función para almacenar datos en la caché 
 def cache_data(key):
-    value = generate_value(key)  # Generar el valor para la clave
+    value = generate_value(key)  
     instance = get_redis_instance(key)
     instance.set(key, value)
 
-# Leer el archivo CSV (sin cabecera) y cargar las claves en la caché
+# Leer el archivo CSV
 def load_csv_to_cache(file_path, max_lines=None):
     print("Leyendo archivo CSV...")
-    df = pd.read_csv(file_path, header=None)  # Leer el CSV sin cabecera
+    df = pd.read_csv(file_path, header=None)  
     if max_lines is not None:
         df = df.head(max_lines)  # Limitar el número de líneas
-    print(df.head())  # Mostrar las primeras filas del DataFrame para depuración
     print("Archivo CSV leído. Cargando datos en caché...")
-    for key in df[0]:  # Acceder a la primera columna por índice (0)
-        cache_data(key)  # Almacenar la clave y su valor generado en la caché
+    for key in df[0]:  
+        cache_data(key)  
     print("Datos cargados en caché")
 
-# Función para recuperar datos desde la caché
+
 def get_cached_data(key):
     instance = get_redis_instance(key)
     return instance.get(key)
 
 # Leer el CSV para obtener las claves
 def load_keys_from_csv(file_path):
-    df = pd.read_csv(file_path, header=None)  # Leer el CSV sin cabecera
+    df = pd.read_csv(file_path, header=None)  
     print("hola mundo")
-    return df[0].tolist()  # Devolver todas las claves de la primera columna
+    return df[0].tolist()  
 
-# Función para generar tráfico basado en las claves del dataset
+# Función para generar tráfico 
 def generate_traffic(keys, num_requests):
     for _ in range(num_requests):  # Limitar el número de peticiones
         subset = keys[start_index:end_index]
         key = random.choice(subset)  # Seleccionar una clave aleatoria del CSV en el rango
 
-        start_time = time.time()  # Iniciar temporizador
+        start_time = time.time()  
         
-        value = get_cached_data(key)  # Hacer la petición a Redis
+        value = get_cached_data(key)  # petición a Redis
         if value is None:
             global contador_miss
             contador_miss += 1 
@@ -105,20 +102,18 @@ def generate_traffic(keys, num_requests):
             contador_hit += 1
             print("HIT")
         
-        end_time = time.time()  # Fin del temporizador
+        end_time = time.time()  
         response_times.append(end_time - start_time)
         
  
-# Ruta al archivo CSV
 csv_file_path = '3rd_lev_domains.csv'
 
-# Cargar las claves en Redis con valores generados
 load_csv_to_cache(csv_file_path,2000)
 generate_traffic(load_keys_from_csv(csv_file_path),5000)
 average_response_time = statistics.mean(response_times)
 stddev_response_time = statistics.stdev(response_times)
 
-# Imprimir resultados
+
 print(f"LAS PETICIONES POR PARTICION SON {peticiones}")
 print(f"CONTADOR HIT = {contador_hit}")
 print(f"CONTADOR MISS = {contador_miss}")
